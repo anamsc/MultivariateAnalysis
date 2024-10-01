@@ -1,0 +1,370 @@
+---
+title: "Taller 1 multivariado"
+author: "Ana Sanchez"
+date: "2024-08-15"
+output: html_document
+---
+
+**##Ejercicio 1**
+
+```{r}
+anexo<-read.csv("anexo1.csv", header=TRUE, sep=";", dec=",")
+str(anexo)
+```
+
+**a)**
+
+**1.Chequeos univariados**
+
+**Histogramas**
+
+```{r setup, include=FALSE}
+library(MASS)
+W <- cov(anexo)
+det(W)
+eigen(W)
+```
+
+```{r}
+set.seed(2024)  # Para reproducibilidad
+p <- 3  # Número de variables
+n <- 100  # Tamaño de la muestra
+muestra <- mvrnorm(n, mu=colMeans(anexo), Sigma=W)
+```
+
+```{r}
+hist(muestra[,1], main="Histograma de X1", xlab="X1")
+```
+
+```{r}
+hist(muestra[,2], main="Histograma de X2", xlab="X2")
+```
+
+```{r}
+hist(muestra[,3], main="Histograma de X3", xlab="X3")
+```
+
+**Q-Q Plots**
+
+```{r}
+# QQ plot para la variable X1
+qqnorm(anexo$X1, main="QQ Plot de X1")
+qqline(anexo$X1, col="red")
+```
+
+```{r}
+# QQ plot para la variable X2
+qqnorm(anexo$X2, main="QQ Plot de X2")
+qqline(anexo$X2, col="red")
+```
+
+```{r}
+# QQ plot para la variable X3
+qqnorm(anexo$X3, main="QQ Plot de X3")
+qqline(anexo$X3, col="red")
+```
+
+**Proporción de observaciones**
+
+```{r}
+output1 <- (mean(muestra[,1]) - sd(muestra[,1]) < muestra[,1]) & (mean(muestra[,1]) + sd(muestra[,1]) > muestra[,1]) 
+p11 <- mean(output1) 
+1.396/sqrt(n)
+output2 <- (mean(muestra[,1]) - 2*sd(muestra[,1]) < muestra[,1]) & (mean(muestra[,1]) + 2*sd(muestra[,1]) > muestra[,1]) 
+p21 <- mean(output2) 
+abs(p21 - 0.954) 
+0.628/sqrt(n)
+```
+
+```{r}
+output2 <- (mean(muestra[,2]) - sd(muestra[,2]) < muestra[,2]) & (mean(muestra[,2]) + sd(muestra[,2]) > muestra[,2]) 
+p12 <- mean(output2) 
+1.396/sqrt(n)
+output2 <- (mean(muestra[,2]) - 2*sd(muestra[,2]) < muestra[,2]) & (mean(muestra[,2]) + 2*sd(muestra[,2]) > muestra[,2]) 
+p21 <- mean(output2) 
+abs(p21 - 0.954) 
+0.628/sqrt(n)
+```
+
+```{r}
+output3 <- (mean(muestra[,3]) - sd(muestra[,3]) < muestra[,3]) & (mean(muestra[,3]) + sd(muestra[,3]) > muestra[,3]) 
+p12 <- mean(output3) 
+1.396/sqrt(n)
+output3 <- (mean(muestra[,3]) - 2*sd(muestra[,3]) < muestra[,3]) & (mean(muestra[,3]) + 2*sd(muestra[,3]) > muestra[,3]) 
+p21 <- mean(output3) 
+abs(p21 - 0.954) 
+0.628/sqrt(n)
+```
+
+**#2.Chequeos bivariados**
+
+```{r}
+dim(muestra)
+x_bar <- apply(muestra,2,mean)
+cov(muestra)
+S <- (1/(n-1))*t(muestra - x_bar)%*%(muestra - x_bar)
+gsd <- function(x){
+  output <- t(x-x_bar)%*%solve(S)%*%(x-x_bar)
+  return(output)  
+}
+ds <- vector()
+for(i in 1:n){
+  ds <- append(ds,gsd(muestra[i,]))
+  print(i)
+}
+ds
+hist(ds,freq = FALSE)
+ds_ord <- sort(ds)
+prob_aso <- (1:n - 0.5)/n
+q_chi <- qchisq(prob_aso,3) 
+plot(q_chi,ds_ord,pch=20,col='orange')
+abline(a=0,b=1,col='red')
+```
+
+De acuerdo a los resultados arrojados por cada uno de los distintos chequeos, podríamos decir que la muestra se encuentra aproximada por una distribución normal.
+
+**#b)**
+
+```{r}
+
+simulated_chi2 <- rchisq(10000, df = 3)
+# Histogram of the simulated values
+hist(simulated_chi2, breaks = 50, main = "Chi-square Distribution with 3
+Degrees of Freedom", xlab = "Chi-square Values")
+# Calculate the sample mean
+sample_mean <- colMeans(anexo)
+# Covariance matrix
+S <- cov(anexo)
+# Given mean vector
+mu <- c(0.1, -0.2, 0.05)
+# Difference between sample mean and given mean
+diff <- sample_mean - mu
+# Inverse of the covariance matrix
+S_inv <- solve(S)
+# Calculate the quadratic form (Mahalanobis distance)
+quadratic_form <- t(diff) %*% S_inv %*% diff
+result <- quadratic_form
+
+```
+
+De acuerdo a la propiedad ilustrada en la sección 4.7 del libro guía, se encuentra dentro de la distribución Chi-cuadrado con 3 grados de libertad.
+
+**#c)**
+
+```{r}
+# Paso 1: Calcular la media muestral
+X_bar <- colMeans(anexo)
+
+# Paso 2: Calcular la matriz de varianzas-covarianzas muestrales
+S <- cov(anexo)
+
+# Paso 3: Calcular las distancias cuadráticas generalizadas para cada observación
+generalized_distances <- apply(anexo, 1, function(x) {
+  t(x - X_bar) %*% solve(S) %*% (x - X_bar)
+})
+
+# Mostrar las distancias calculadas
+generalized_distances
+
+# Paso 4: Graficar un Chi-square plot
+# Los grados de libertad son iguales al número de variables (3 en este caso)
+df <- ncol(anexo)
+qqplot(qchisq(ppoints(nrow(anexo)), df=df), generalized_distances, 
+       main="Chi-Square Q-Q Plot", 
+       xlab="Theoretical Quantiles", 
+       ylab="Generalized Squared Distances")
+abline(0, 1, col="red")
+
+# Marcar los puntos inusualmente grandes
+outliers <- which(generalized_distances > qchisq(0.95, df=df))
+points(qchisq(ppoints(nrow(anexo))[outliers], df=df), generalized_distances[outliers], col="blue", pch=19)
+
+# Mostrar los índices de las observaciones con distancias grandes
+outliers
+```
+
+##Ejercicio 2
+
+```{r}
+library(MultBiplotR)
+
+# Cargar los datos Protein
+data("Protein")
+str(Protein)
+```
+
+#a)
+
+```{r}
+# Vector de medias
+numeric_columns <- sapply(Protein, is.numeric)
+mean_vector <- colMeans(Protein[, numeric_columns])
+mean_vector
+
+numeric_data <- Protein[, sapply(Protein, is.numeric)]
+```
+
+```{r}
+# Calcular la matriz de covarianzas
+cov_matrix <- cov(numeric_data)
+cov_matrix
+```
+
+#b)
+
+```{r}
+# Calcular la media de las variables numéricas por región
+mean_by_region <- aggregate(Protein[, numeric_columns], 
+                            by = list(Region = Protein$Region), 
+                            FUN = mean)
+
+# Mostrar el resultado
+mean_by_region
+```
+
+Hay diferencias claras en las preferencias alimentarias entre las regiones. El Norte tiende a consumir más leche y pescado, mientras que el Centro consume más carne (tanto roja como blanca). El Sur muestra consistentemente un consumo más bajo en todas las categorías, lo que podría reflejar diferencias en la dieta tradicional o en la disponibilidad de estos productos.Las diferencias en el consumo de estos productos proteicos pueden estar influidas por factores como la cultura, la economía, la geografía y la disponibilidad de productos.
+
+#c)
+
+```{r}
+# Gráfico de estrellas
+stars(Protein[, numeric_columns], 
+      labels = rownames(Protein), 
+      main = "Gráfico de Estrellas para el Consumo de Proteínas en Europa",
+      full = TRUE, # Las estrellas se llenan completamente (en lugar de una mitad)
+      flip.labels = FALSE, # No se invierten las etiquetas
+      draw.segments = TRUE) # Segmentos visibles entre variables
+```
+
+```{r}
+# Instalar y cargar el paquete aplpack para las Caras de Chernoff
+if (!require(aplpack)) install.packages("aplpack", dependencies = TRUE)
+library(aplpack)
+
+# Gráfico de caras de Chernoff
+faces(Protein[, numeric_columns], 
+      labels = rownames(Protein), 
+      main = "Caras de Chernoff para el Consumo de Proteínas en Europa")
+```
+
+#d)
+
+```{r}
+# Instalar y cargar el paquete MVN para pruebas de normalidad multivariada
+if (!require(MVN)) install.packages("MVN", dependencies = TRUE)
+library(MVN)
+
+# Seleccionar solo las columnas numéricas
+numeric_data <- Protein[, sapply(Protein, is.numeric)]
+
+# Gráfico Q-Q de normalidad multivariada
+mvn_result <- mvn(data = numeric_data, mvnTest = "royston", multivariatePlot = "qq")
+```
+
+#e)
+
+```{r}
+library(MVN)
+
+# Seleccionar solo las columnas numéricas del dataset Protein
+numeric_data <- Protein[, sapply(Protein, is.numeric)]
+
+# Realizar la prueba de Mardia
+mardia_test <- mvn(data = numeric_data, mvnTest = "mardia")
+
+# Mostrar los resultados de la prueba
+print(mardia_test$multivariateNormality)
+```
+
+Con los resultados obtenidos, bajo la prueba de Mardia, los datos no muestran desviaciones significativas de la normalidad multivariada. En otras palabras, no hay evidencia suficiente para rechazar la hipótesis de que los datos provienen de una población normal multivariada.
+
+#f)
+
+```{r}
+library(MVN)
+
+# Seleccionar solo las columnas numéricas del dataset Protein
+numeric_data <- Protein[, sapply(Protein, is.numeric)]
+
+# Calcular las distancias de Mahalanobis y realizar la prueba de outliers multivariados
+outliers_test <- mvn(data = numeric_data, multivariateOutlierMethod = "quan")
+
+# Mostrar el gráfico de distancias de Mahalanobis
+outliers_test$multivariateOutliersPlot
+
+# Mostrar la tabla de resultados con las observaciones identificadas como outliers
+outliers_test$multivariateOutliers
+```
+
+#g)
+
+1.Univariado
+
+```{r}
+# Cargar los datos
+data("Protein", package = "MultBiplotR")
+numeric_data <- Protein[, sapply(Protein, is.numeric)]
+
+# Definir las medias hipotéticas
+mu0 <- c(9, 7, 2, 15, 5, 30, 4, 3, 4)
+
+# Inicializar una lista para guardar los resultados
+t_test_results <- list()
+
+# Realizar pruebas t para cada variable
+for (i in seq_along(numeric_data)) {
+  var_name <- colnames(numeric_data)[i]
+  t_test <- t.test(numeric_data[[i]], mu = mu0[i])
+  t_test_results[[var_name]] <- t_test
+}
+
+# Mostrar resultados de las pruebas t
+for (var_name in names(t_test_results)) {
+  cat("Variable:", var_name, "\n")
+  print(t_test_results[[var_name]])
+  cat("\n\n")
+}
+
+```
+
+La mayoría de los resultados sugieren que no hay evidencia estadística para afirmar que las medias observadas de consumo de estos alimentos difieren significativamente de las medias hipotéticas probadas, excepto en el caso de los huevos, donde sí se observa una diferencia significativa.
+
+2.Multivariado
+
+```{r}
+num_vars <- ncol(numeric_data)
+cat("Número de variables en numeric_data:", num_vars, "\n")
+
+mu_0 <- c(9, 7, 2, 15, 5, 30, 4, 3, 4)
+
+# Convertir mu_0 a un vector columna
+mu_0 <- matrix(mu_0, ncol = 1)
+
+# Función para calcular el estadístico T² de Hotelling
+T2 <- function(X, mu, n) {
+  Xbarra <- colMeans(X)
+  Xbarra <- matrix(Xbarra, ncol = 1) # Convertir a vector columna
+  S <- cov(X)
+  InvS <- solve(S)
+  DifMed <- Xbarra - mu
+  T2 <- n * t(DifMed) %*% InvS %*% DifMed
+  return(T2)
+}
+
+# Número de variables y tamaño de la muestra
+p <- num_vars
+n <- nrow(numeric_data)
+
+# Calcular el estadístico T² de Hotelling
+T2_statistic <- T2(numeric_data, mu_0, n)
+cat("Hotelling's T² statistic:", T2_statistic, "\n")
+
+# Calcular el valor crítico de la distribución F
+qf <- qf(0.10, p, n - p, lower.tail = FALSE)
+V <- (((n - 1) * p) / (n - p)) * qf
+cat("Critical value from F-distribution:", qf, "\n")
+cat("Scaled critical value V:", V, "\n")
+
+```
+
+El valor del estadístico T² (64.84185) es mucho mayor que el valor crítico escalado V (27.74696). Esto indica que hay evidencia suficiente para rechazar la hipótesis nula y concluir que las medias muestrales son significativamente diferentes de las medias hipotéticas,contrario a los resultados arrojados por las pruebas univariadas.
